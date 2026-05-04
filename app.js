@@ -190,7 +190,7 @@ app.post('/loggingin', async (req, res) => {
         return;
     }
 
-    const result = await userCollection.find({ email: username }).project({ email: 1, password: 1, _id: 1 }).toArray();
+    const result = await userCollection.find({ email: email }).project({ email: 1, password: 1, _id: 1 }).toArray();
 
     if (result.length != 1) {
         res.send(`
