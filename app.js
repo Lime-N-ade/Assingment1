@@ -179,18 +179,18 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/loggingin', async (req, res) => {
-    var username = req.body.email;
+    var email = req.body.email;  // ← correctly named
     var password = req.body.password;
 
-    const schema = Joi.string().max(20).required();
-    const validationResult = schema.validate(username);
+    const schema = Joi.string().email().required();
+    const validationResult = schema.validate(email);
     if (validationResult.error != null) {
         console.log(validationResult.error);
         res.redirect("/login");
         return;
     }
 
-    const result = await userCollection.find({ email: email }).project({ email: 1, password: 1, _id: 1 }).toArray();
+    const result = await userCollection.find({ email: email }).project({ username: 1, email: 1, password: 1, _id: 1 }).toArray();
 
     if (result.length != 1) {
         res.send(`
@@ -201,14 +201,14 @@ app.post('/loggingin', async (req, res) => {
     }
     if (await bcrypt.compare(password, result[0].password)) {
         req.session.authenticated = true;
-        req.session.username = username;
+        req.session.username = result[0].username;  // ← get username from DB
         req.session.cookie.maxAge = expireTime;
         res.redirect('/loggedIn');
         return;
     }
     else {
         res.send(`
-            <p>Invalid user or password.</p>
+            <p>Invalid email or password.</p>
             <a href="/login">Try again</a>
         `);
         return;
