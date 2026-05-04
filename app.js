@@ -142,6 +142,7 @@ app.get('/login', (req,res) => {
     log in
     <form action='/loggingin' method='post'>
     <input name='username' type='text' placeholder='username'>
+    <input name='email' type='email' placeholder='email'>
     <input name='password' type='password' placeholder='password'>
     <button>Submit</button>
     </form>
@@ -151,6 +152,7 @@ app.get('/login', (req,res) => {
 
 app.post('/loggingin', async (req,res) => {
     var username = req.body.username;
+    var email = req.body.email;
     var password = req.body.password;
 
     const schema = Joi.string().max(20).required();
