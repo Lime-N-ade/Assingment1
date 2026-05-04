@@ -117,6 +117,29 @@ app.post('/submitUser', async (req,res) => {
     var email = req.body.email;
     var password = req.body.password;
 
+    // Check each field individually
+    if (!username) {
+        res.send(`
+            <p>Name is required.</p>
+            <a href="/signup">Try again</a>
+        `);
+        return;
+    }
+    if (!email) {
+        res.send(`
+            <p>Email is required.</p>
+            <a href="/signup">Try again</a>
+        `);
+        return;
+    }
+    if (!password) {
+        res.send(`
+            <p>Password is required.</p>
+            <a href="/signup">Try again</a>
+        `);
+        return;
+    }
+
     const schema = Joi.object({
         username: Joi.string().alphanum().max(20).required(),
         email: Joi.string().email().required(),
@@ -126,7 +149,10 @@ app.post('/submitUser', async (req,res) => {
     const validationResult = schema.validate({username, email, password});
     if (validationResult.error != null) {
         console.log(validationResult.error);
-        res.redirect("/signup");
+        res.send(`
+            <p>Invalid input. Please try again.</p>
+            <a href="/signup">Try again</a>
+        `);
         return;
     }
 
@@ -140,12 +166,11 @@ app.post('/submitUser', async (req,res) => {
     req.session.cookie.maxAge = expireTime;
     res.redirect('/loggedIn');
 });
-
 app.get('/login', (req, res) => {
     var html = `
     log in
     <form action='/loggingin' method='post'>
-    <input name='username' type='text' placeholder='username'>
+    <input name="email" type="email" placeholder="email">
     <input name='password' type='password' placeholder='password'>
     <button>Submit</button>
     </form>
@@ -154,7 +179,7 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/loggingin', async (req, res) => {
-    var username = req.body.username;
+    var username = req.body.email;
     var password = req.body.password;
 
     const schema = Joi.string().max(20).required();
@@ -165,7 +190,7 @@ app.post('/loggingin', async (req, res) => {
         return;
     }
 
-    const result = await userCollection.find({ username: username }).project({ username: 1, password: 1, _id: 1 }).toArray();
+    const result = await userCollection.find({ email: username }).project({ email: 1, password: 1, _id: 1 }).toArray();
 
     if (result.length != 1) {
         res.send(`
