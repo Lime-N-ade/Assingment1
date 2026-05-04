@@ -1,5 +1,5 @@
 require('./utils.js');
-require('dotenv').config(); 
+require('dotenv').config();
 
 
 
@@ -29,17 +29,17 @@ const mongodb_session_secret = process.env.MONGODB_SESSION_SECRET;
 const node_session_secret = process.env.NODE_SESSION_SECRET;
 /* END secret section */
 
-const {database} = include('databaseConnection');
+const { database } = include('databaseConnection');
 const userCollection = database.db(mongodb_user_database).collection('users');
 
 app.use(express.static(__dirname + "/public"));
 
 
-app.use(express.urlencoded({extended: false}));
+app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.use(mongoSanitizer(
-    { replaceWith: '_'}
+    { replaceWith: '_' }
 ));
 
 var mongoStore = MongoStore.create({
@@ -49,10 +49,10 @@ var mongoStore = MongoStore.create({
     }
 });
 
-app.use(session({ 
+app.use(session({
     secret: node_session_secret,
     store: mongoStore, //default is memory store 
-    saveUninitialized: false, 
+    saveUninitialized: false,
     resave: true
 }
 ));
@@ -68,13 +68,13 @@ app.get('/', (req, res) => {
     }
 });
 
-app.get('/about', (req,res) => {
+app.get('/about', (req, res) => {
     var color = req.query.color;
 
-    res.send("<h1 style='color:"+color+";'>Patrick Guichon</h1>");
+    res.send("<h1 style='color:" + color + ";'>Patrick Guichon</h1>");
 });
 
-app.get('/cat/:id', (req,res) => {
+app.get('/cat/:id', (req, res) => {
 
     var cat = req.params.id;
 
@@ -85,21 +85,21 @@ app.get('/cat/:id', (req,res) => {
         res.send("Socks: <img src='/socks.gif' style='width:250px;'>");
     }
     else {
-        res.send("Invalid cat id: "+cat);
+        res.send("Invalid cat id: " + cat);
     }
 });
 
-app.post('/submitEmail', (req,res) => {
+app.post('/submitEmail', (req, res) => {
     var email = req.body.email;
     if (!email) {
         res.redirect('/contact?missing=1');
     }
     else {
-        res.send("Thanks for subscribing with your email: "+email);
+        res.send("Thanks for subscribing with your email: " + email);
     }
 });
 
-app.get('/signup', (req,res) => {
+app.get('/signup', (req, res) => {
     var html = `
     create user
     <form action='/submitUser' method='post'>
@@ -117,32 +117,31 @@ app.post('/submitUser', async (req,res) => {
     var email = req.body.email;
     var password = req.body.password;
 
-    const schema = Joi.object(
-        {
-            username: Joi.string().alphanum().max(20).required(),
-            password: Joi.string().max(20).required()
-        });
+    const schema = Joi.object({
+        username: Joi.string().alphanum().max(20).required(),
+        email: Joi.string().email().required(),
+        password: Joi.string().max(20).required()
+    });
     
-    const validationResult = schema.validate({username, password});
+    const validationResult = schema.validate({username, email, password});
     if (validationResult.error != null) {
         console.log(validationResult.error);
-        res.redirect("/createUser");
+        res.redirect("/signup");
         return;
     }
 
     var hashedPassword = await bcrypt.hash(password, saltRounds);
     
-    await userCollection.insertOne({username: username, password: hashedPassword});
+    await userCollection.insertOne({username: username, email: email, password: hashedPassword});
     console.log("Inserted user");
 
-    var html = `successfully created user
-    <br/>
-    <button onclick="window.location.href='/login'">Login</button>
-    <button onclick="window.location.href='/'">Home</button>`;
-    res.send(html);
+    req.session.authenticated = true;
+    req.session.username = username;
+    req.session.cookie.maxAge = expireTime;
+    res.redirect('/loggedIn');
 });
 
-app.get('/login', (req,res) => {
+app.get('/login', (req, res) => {
     var html = `
     log in
     <form action='/loggingin' method='post'>
@@ -154,7 +153,7 @@ app.get('/login', (req,res) => {
     res.send(html);
 });
 
-app.post('/loggingin', async (req,res) => {
+app.post('/loggingin', async (req, res) => {
     var username = req.body.username;
     var password = req.body.password;
 
@@ -166,7 +165,7 @@ app.post('/loggingin', async (req,res) => {
         return;
     }
 
-    const result = await userCollection.find({username: username}).project({username: 1, password: 1, _id: 1}).toArray();
+    const result = await userCollection.find({ username: username }).project({ username: 1, password: 1, _id: 1 }).toArray();
 
     if (result.length != 1) {
         res.send(`
@@ -207,8 +206,8 @@ app.get('/loggedIn', (req, res) => {
     `);
 });
 
-app.get('/logout', (req,res) => {
-	req.session.destroy();
+app.get('/logout', (req, res) => {
+    req.session.destroy();
     var html = `
     You are logged out.
     <br/>
@@ -218,7 +217,7 @@ app.get('/logout', (req,res) => {
     res.send(html);
 });
 
-app.use((req,res) => {
+app.use((req, res) => {
     res.status(404);
     res.send("Page not found - 404");
 });
