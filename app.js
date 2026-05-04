@@ -135,7 +135,10 @@ app.post('/submitUser', async (req,res) => {
     await userCollection.insertOne({username: username, password: hashedPassword});
     console.log("Inserted user");
 
-    var html = "successfully created user";
+    var html = `successfully created user
+    <br/>
+    <button onclick="window.location.href='/login'">Login</button>
+    <button onclick="window.location.href='/'">Home</button>`;
     res.send(html);
 });
 
@@ -165,24 +168,25 @@ app.post('/loggingin', async (req,res) => {
 
     const result = await userCollection.find({username: username}).project({username: 1, password: 1, _id: 1}).toArray();
 
-    console.log(result);
     if (result.length != 1) {
-        console.log("user not found");
-        res.redirect("/login");
+        res.send(`
+            <p>User not found.</p>
+            <a href="/login">Try again</a>
+        `);
         return;
     }
     if (await bcrypt.compare(password, result[0].password)) {
-        console.log("correct password");
         req.session.authenticated = true;
         req.session.username = username;
         req.session.cookie.maxAge = expireTime;
-
         res.redirect('/loggedIn');
         return;
     }
     else {
-        console.log("incorrect password");
-        res.redirect("/login");
+        res.send(`
+            <p>Invalid user or password.</p>
+            <a href="/login">Try again</a>
+        `);
         return;
     }
 });
@@ -207,6 +211,9 @@ app.get('/logout', (req,res) => {
 	req.session.destroy();
     var html = `
     You are logged out.
+    <br/>
+    <button onclick="window.location.href='/login'">Login</button>
+    <button onclick="window.location.href='/'">Home</button>
     `;
     res.send(html);
 });
